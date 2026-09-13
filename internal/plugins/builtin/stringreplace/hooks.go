@@ -10,6 +10,10 @@ import (
 // block, respond, or warn.
 const Code = "string_replace_match"
 
+// EditsContent reports whether this instance rewrites the text it matches.
+// Every other on_match (block, respond, warn) leaves the request as it is.
+func (p *Plugin) EditsContent() bool { return p.onMatch == OnMatchReplace }
+
 // OnPrompt edits or inspects the text of the prompt messages of the
 // configured roles, tool-result text included.
 func (p *Plugin) OnPrompt(_ context.Context, x *pluginapi.Exchange) (pluginapi.Decision, error) {
@@ -67,14 +71,14 @@ func (p *Plugin) scan(targets []pluginapi.TextTarget, set func(pluginapi.TextTar
 	units := map[unit]bool{}
 	for _, t := range targets {
 		if set == nil {
-			n := count(p.rules, t.Text, 0)
+			n := count(p.rules, t.Text, whole)
 			if n > 0 {
 				total += n
 				units[unit{t.MessageID, t.Choice}] = true
 			}
 			continue
 		}
-		out, n := apply(p.rules, t.Text, 0)
+		out, n := apply(p.rules, t.Text, whole)
 		if n == 0 {
 			continue
 		}
@@ -105,17 +109,17 @@ func (p *Plugin) OnStreamEvent(_ context.Context, x *pluginapi.Exchange, ev *plu
 	if ev == nil || ev.Kind != pluginapi.EventTextDelta || ev.Text == "" {
 		return pluginapi.Pass(), nil
 	}
-	skip := overlapBytes(ev)
+	w := span{skip: overlapBytes(ev), hold: p.lookbehind, final: ev.Final}
 	switch p.onMatch {
 	case OnMatchReplace:
-		out, n := apply(p.rules, ev.Text, skip)
+		out, n := apply(p.rules, ev.Text, w)
 		if n == 0 {
 			return pluginapi.Pass(), nil
 		}
 		p.addCount(x, n)
 		return pluginapi.Replace(out), nil
 	case OnMatchWarn:
-		if n := count(p.rules, ev.Text, skip); n > 0 {
+		if n := count(p.rules, ev.Text, w); n > 0 {
 			p.addCount(x, n)
 		}
 	}

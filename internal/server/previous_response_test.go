@@ -179,6 +179,156 @@ func TestResponsesWithPreviousResponseID_NativeProviderKeepsForwarding(t *testin
 	}
 }
 
+// storeChainedResponse records a response the gateway served for providerType,
+// the way a finished turn is snapshotted.
+func storeChainedResponse(t *testing.T, store responsestore.Store, id, providerType, userPath string) {
+	t.Helper()
+	if err := store.Create(context.Background(), &responsestore.StoredResponse{
+		Response: &core.ResponsesResponse{
+			ID: id, Object: "response", Status: "completed",
+			Output: []core.ResponsesOutputItem{{ID: "msg_1", Type: "message", Role: "assistant", Content: []core.ResponsesContentItem{{Type: "output_text", Text: "the word is zebra"}}}},
+		},
+		InputItems: []json.RawMessage{json.RawMessage(`{"id":"in_1","type":"message","role":"user","content":[{"type":"input_text","text":"remember: zebra"}]}`)},
+		Provider:   providerType,
+		UserPath:   userPath,
+	}); err != nil {
+		t.Fatalf("store %s: %v", id, err)
+	}
+}
+
+// A response the gateway minted for a chat-translated provider exists only in
+// the gateway's store, so a native provider rejects the id ("Expected an ID
+// that begins with 'resp'"). The gateway holds the whole turn and replays it
+// instead. An id it does not know is still forwarded, so native chains that
+// started outside the gateway keep working.
+func TestResponsesWithPreviousResponseID_NativeProviderReplaysGatewayMintedChain(t *testing.T) {
+	tests := []struct {
+		name         string
+		providerType string
+		wantItems    int
+		wantID       string
+	}{
+		{name: "translated predecessor is replayed", providerType: "anthropic", wantItems: 3},
+		{name: "native predecessor keeps the id", providerType: "openai", wantID: "resp_stored"},
+		{name: "unknown provider keeps the id", providerType: "", wantID: "resp_stored"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			provider := previousResponseTestProvider(t, "openai")
+			srv := New(provider, nil)
+			storeChainedResponse(t, srv.handler.currentResponseStore(), "resp_stored", tt.providerType, "")
+
+			rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"what is the word?","previous_response_id":"resp_stored"}`)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d (%s)", rec.Code, rec.Body.String())
+			}
+			forwarded := provider.capturedResponsesReq
+			if forwarded.PreviousResponseID != tt.wantID {
+				t.Fatalf("forwarded previous_response_id = %q, want %q", forwarded.PreviousResponseID, tt.wantID)
+			}
+			if tt.wantItems == 0 {
+				if _, ok := forwarded.Input.(string); !ok {
+					t.Fatalf("native input must be untouched, got %#v", forwarded.Input)
+				}
+				return
+			}
+			items := forwardedInputItems(t, provider.capturingProvider)
+			if len(items) != tt.wantItems {
+				t.Fatalf("forwarded %d items, want %d: %#v", len(items), tt.wantItems, items)
+			}
+			if text, _ := json.Marshal(items[1]["content"]); !strings.Contains(string(text), "the word is zebra") {
+				t.Fatalf("stored output not replayed: %#v", items[1])
+			}
+			if !strings.Contains(rec.Body.String(), `"previous_response_id":"resp_stored"`) {
+				t.Fatalf("chained response must echo previous_response_id: %s", rec.Body.String())
+			}
+		})
+	}
+}
+
+// A native provider resolves previous_response_id upstream under the
+// gateway's shared credential, so forwarding another tenant's id would let
+// one tenant continue - and read back - a conversation the same gateway hides
+// from it on GET. Such an id is reported missing instead; an id the gateway
+// does not hold still reaches the provider, so chains created against it
+// directly keep working.
+func TestResponsesWithPreviousResponseID_NativeProviderEnforcesOwnership(t *testing.T) {
+	newService := func(t *testing.T) *translatedInferenceService {
+		t.Helper()
+		s := &translatedInferenceService{provider: previousResponseTestProvider(t, "openai"), responseStore: responsestore.NewMemoryStore()}
+		storeChainedResponse(t, s.responseStore, "resp_owned", "openai", "/tenant-b")
+		storeChainedResponse(t, s.responseStore, "resp_translated", "anthropic", "/tenant-b")
+		return s
+	}
+	scoped := func(path string) context.Context {
+		return core.WithAccessScope(context.Background(), core.AccessScope{UserPath: path})
+	}
+
+	tests := []struct {
+		name       string
+		ctx        context.Context
+		id         string
+		wantReplay bool
+		wantErr    bool
+	}{
+		{name: "foreign tenant is refused", ctx: scoped("/tenant-a"), id: "resp_owned", wantErr: true},
+		{name: "foreign tenant is refused for a gateway-minted id", ctx: scoped("/tenant-a"), id: "resp_translated", wantErr: true},
+		{name: "owner forwards its native id", ctx: scoped("/tenant-b"), id: "resp_owned"},
+		{name: "owner replays its gateway-minted id", ctx: scoped("/tenant-b"), id: "resp_translated", wantReplay: true},
+		{name: "unknown id is forwarded", ctx: scoped("/tenant-a"), id: "resp_unknown"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := newService(t)
+			replay, err := s.nativePreviousResponse(tt.ctx, tt.id)
+			if tt.wantErr {
+				if err == nil || !strings.Contains(err.Error(), "not found") {
+					t.Fatalf("error = %v, want not found", err)
+				}
+				return
+			}
+			if err != nil || replay != tt.wantReplay {
+				t.Fatalf("nativePreviousResponse() = %v, %v, want %v, nil", replay, err, tt.wantReplay)
+			}
+			// Every dispatch attempt re-checks, so a native attempt of any
+			// request is covered even when the history was not expanded.
+			req := &core.ResponsesRequest{Model: "gpt-5-mini", Input: "again?", PreviousResponseID: tt.id}
+			if _, err := s.PatchResponsesAttempt(tt.ctx, req, "openai"); err != nil {
+				t.Fatalf("PatchResponsesAttempt() error = %v", err)
+			}
+		})
+	}
+}
+
+// The foreign-tenant rejection reaches the client as a 404, streamed or not,
+// the way an unknown id does on a chat-translated provider.
+func TestResponsesWithPreviousResponseID_ForeignTenantChainReturns404(t *testing.T) {
+	for _, stream := range []bool{false, true} {
+		provider := previousResponseTestProvider(t, "openai")
+		srv := New(provider, nil)
+		storeChainedResponse(t, srv.handler.currentResponseStore(), "resp_owned", "openai", "/tenant-b")
+
+		body := `{"model":"gpt-5-mini","input":"what is the word?","previous_response_id":"resp_owned","stream":` + map[bool]string{false: "false", true: "true"}[stream] + `}`
+		req := httptest.NewRequest(http.MethodPost, "/v1/responses", strings.NewReader(body))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		c := echo.New().NewContext(req, rec)
+		c.SetRequest(req.WithContext(core.WithAccessScope(req.Context(), core.AccessScope{UserPath: "/tenant-a"})))
+		if err := srv.handler.Responses(c); err != nil {
+			t.Fatalf("stream=%v handler.Responses() error = %v", stream, err)
+		}
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("stream=%v status = %d (%s), want 404", stream, rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "Previous response with id 'resp_owned' not found.") {
+			t.Fatalf("stream=%v body = %s, want the not-found message", stream, rec.Body.String())
+		}
+		if provider.capturedResponsesReq != nil {
+			t.Fatalf("stream=%v another tenant's chain must not reach the provider", stream)
+		}
+	}
+}
+
 func TestResponsesWithPreviousResponseID_UnknownIDReturns404(t *testing.T) {
 	provider := previousResponseTestProvider(t, "anthropic")
 	srv := New(provider, nil)
@@ -231,19 +381,127 @@ func TestPatchResponsesAttempt_ScopedTenantCannotChainAcrossScopes(t *testing.T)
 	}
 }
 
-func TestResponsesWithPreviousResponseID_StreamedPredecessorReturns404(t *testing.T) {
+func streamedResponseData(id, text string) string {
+	return streamedTerminalData("response.completed", "completed", id, text)
+}
+
+func streamedTerminalData(event, status, id, text string) string {
+	return "event: " + event + "\ndata: {\"type\":\"" + event + "\",\"response\":{\"id\":\"" + id +
+		"\",\"object\":\"response\",\"status\":\"" + status + "\",\"output\":[{\"id\":\"msg_" + id +
+		"\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"" + text +
+		"\"}]}]}}\n\ndata: [DONE]\n\n"
+}
+
+// TestResponsesWithPreviousResponseID_StreamedPredecessorChains covers the
+// common agent loop: every turn streams, and each one chains on the last. A
+// streamed response is snapshotted from its terminal event, so a later turn
+// can chain on it and replays the whole streamed chain.
+func TestResponsesWithPreviousResponseID_StreamedPredecessorChains(t *testing.T) {
 	provider := previousResponseTestProvider(t, "anthropic")
-	provider.streamData = "event: response.completed\ndata: {\"type\":\"response.completed\",\"response\":{\"id\":\"resp_s\",\"object\":\"response\",\"status\":\"completed\",\"output\":[]}}\n\ndata: [DONE]\n\n"
+	provider.streamData = streamedResponseData("resp_s1", "the word is zebra")
+	srv := New(provider, nil)
+	store := srv.handler.currentResponseStore()
+
+	rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"remember: zebra","stream":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("turn one status = %d (%s)", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "previous_response_id") {
+		t.Fatalf("an unchained stream must not name a predecessor: %s", rec.Body.String())
+	}
+	waitForStoredResponse(t, store, "resp_s1")
+	stored, err := store.Get(context.Background(), "resp_s1")
+	if err != nil {
+		t.Fatalf("get resp_s1: %v", err)
+	}
+	if len(stored.InputItems) != 1 || len(stored.Response.Output) != 1 {
+		t.Fatalf("streamed snapshot holds %d input items and %d output items, want 1 and 1", len(stored.InputItems), len(stored.Response.Output))
+	}
+
+	provider.streamData = streamedResponseData("resp_s2", "still zebra")
+	rec = postResponses(t, srv, `{"model":"gpt-5-mini","input":"sure?","previous_response_id":"resp_s1","stream":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("turn two status = %d (%s)", rec.Code, rec.Body.String())
+	}
+	// The client sees the link on the streamed response, as on a buffered one.
+	if !strings.Contains(rec.Body.String(), `"previous_response_id":"resp_s1"`) {
+		t.Fatalf("streamed chained response must name its predecessor: %s", rec.Body.String())
+	}
+	waitForStoredResponse(t, store, "resp_s2")
+	stored, err = store.Get(context.Background(), "resp_s2")
+	if err != nil {
+		t.Fatalf("get resp_s2: %v", err)
+	}
+	if stored.Response.PreviousResponseID != "resp_s1" {
+		t.Fatalf("streamed chained snapshot links to %q, want resp_s1", stored.Response.PreviousResponseID)
+	}
+
+	provider.capturedResponsesReq = nil
+	if rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"what is the word?","previous_response_id":"resp_s2"}`); rec.Code != http.StatusOK {
+		t.Fatalf("turn three status = %d (%s)", rec.Code, rec.Body.String())
+	}
+	items := forwardedInputItems(t, provider.capturingProvider)
+	if len(items) != 5 {
+		t.Fatalf("forwarded %d items, want two streamed turns plus the new input: %#v", len(items), items)
+	}
+	if items[1]["role"] != "assistant" || items[3]["role"] != "assistant" {
+		t.Fatalf("forwarded roles = %v/%v, want assistant at 1 and 3", items[1]["role"], items[3]["role"])
+	}
+	if text, _ := json.Marshal(items[1]["content"]); !strings.Contains(string(text), "the word is zebra") {
+		t.Fatalf("streamed output not replayed: %#v", items[1])
+	}
+}
+
+// TestResponsesWithPreviousResponseID_StreamedTerminalEventsAreStored covers
+// the other terminal events: a truncated or failed streamed turn is stored
+// like its buffered counterpart, so a client can retrieve it and chain on it.
+func TestResponsesWithPreviousResponseID_StreamedTerminalEventsAreStored(t *testing.T) {
+	for _, tc := range []struct{ event, status string }{
+		{"response.incomplete", "incomplete"},
+		{"response.failed", "failed"},
+	} {
+		t.Run(tc.event, func(t *testing.T) {
+			provider := previousResponseTestProvider(t, "anthropic")
+			provider.streamData = streamedTerminalData(tc.event, tc.status, "resp_t", "partial")
+			srv := New(provider, nil)
+			store := srv.handler.currentResponseStore()
+
+			if rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"go","stream":true}`); rec.Code != http.StatusOK {
+				t.Fatalf("streaming status = %d (%s)", rec.Code, rec.Body.String())
+			}
+			waitForStoredResponse(t, store, "resp_t")
+			stored, err := store.Get(context.Background(), "resp_t")
+			if err != nil {
+				t.Fatalf("get resp_t: %v", err)
+			}
+			if stored.Response.Status != tc.status {
+				t.Fatalf("stored status = %q, want %q", stored.Response.Status, tc.status)
+			}
+
+			provider.capturedResponsesReq = nil
+			if rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"continue","previous_response_id":"resp_t"}`); rec.Code != http.StatusOK {
+				t.Fatalf("chained status = %d (%s)", rec.Code, rec.Body.String())
+			}
+			if items := forwardedInputItems(t, provider.capturingProvider); len(items) != 3 {
+				t.Fatalf("forwarded %d items, want 3", len(items))
+			}
+		})
+	}
+}
+
+func TestResponsesWithPreviousResponseID_StreamedWithStoreFalseIsNotStored(t *testing.T) {
+	provider := previousResponseTestProvider(t, "anthropic")
+	provider.streamData = streamedResponseData("resp_s", "not kept")
 	srv := New(provider, nil)
 
-	if rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"streamed","stream":true}`); rec.Code != http.StatusOK {
+	if rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"streamed","stream":true,"store":false}`); rec.Code != http.StatusOK {
 		t.Fatalf("streaming status = %d (%s)", rec.Code, rec.Body.String())
 	}
 	provider.capturedResponsesReq = nil
 
 	rec := postResponses(t, srv, `{"model":"gpt-5-mini","input":"again?","previous_response_id":"resp_s"}`)
 	if rec.Code != http.StatusNotFound {
-		t.Fatalf("status = %d (%s), want 404: streamed responses are not stored", rec.Code, rec.Body.String())
+		t.Fatalf("status = %d (%s), want 404: store:false responses are not stored", rec.Code, rec.Body.String())
 	}
 	if provider.capturedResponsesReq != nil {
 		t.Fatal("a chained turn on an unstored id must not reach the provider")

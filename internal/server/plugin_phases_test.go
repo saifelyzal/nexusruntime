@@ -71,6 +71,8 @@ func (p *phasePlugin) decide(mode string, x *pluginapi.Exchange) (pluginapi.Deci
 		return pluginapi.Block(0, "policy", "blocked by test"), nil
 	case "warn":
 		return pluginapi.Warn("pii", "found", nil), nil
+	case "fail":
+		return pluginapi.Allow(), errors.New("hook failed")
 	case "edit":
 		if x.Response != nil {
 			return pluginapi.Allow(), x.Response.ReplaceText(0, p.text)
@@ -107,6 +109,10 @@ func (p *phasePlugin) StreamPolicy() pluginapi.StreamPolicy {
 
 func (p *phasePlugin) OnStreamEvent(_ context.Context, _ *pluginapi.Exchange, ev *pluginapi.StreamEvent) (pluginapi.StreamDecision, error) {
 	switch p.stream {
+	case "fail_event":
+		if ev.Kind == pluginapi.EventTextDelta {
+			return pluginapi.StreamDecision{}, errors.New("event hook failed")
+		}
 	case "replace":
 		if ev.Kind == pluginapi.EventTextDelta {
 			return pluginapi.Replace(strings.ReplaceAll(ev.Text, "secret", p.text)), nil
@@ -280,7 +286,7 @@ func TestCanForwardMessagesNatively_DisabledByPostResponsePlugins(t *testing.T) 
 	chains := phaseChains(t, map[string]string{"response": "warn"}, guardrails.StepReference{Ref: "phase", Phase: pluginapi.KindResponse, Step: 1})
 	svc := &translatedInferenceService{provider: &capturingProvider{}, pluginChains: staticChainsResolver{chains: chains}}
 	workflow := &core.Workflow{ProviderType: anthropicProviderType}
-	if svc.canForwardMessagesNatively(context.Background(), workflow) {
+	if svc.canForwardMessagesNatively(context.Background(), workflow, false) {
 		t.Fatal("native fast path allowed with a response chain")
 	}
 	svc.pluginChains = staticChainsResolver{chains: &plugins.Chains{}}

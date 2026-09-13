@@ -375,9 +375,11 @@ func TestTransformedSSEStream_LookbehindJoinsPatternAcrossChunks(t *testing.T) {
 		t.Errorf("windows = %q, want %q", texts(tr.seen), want)
 	}
 	var overlaps []int
+	var finals []bool
 	for _, ev := range tr.seen {
 		if ev.Kind == KindTextDelta {
 			overlaps = append(overlaps, ev.Overlap)
+			finals = append(finals, ev.Final)
 			if !strings.Contains(string(ev.Data), `"content":"`+jsonEscape(ev.Text)+`"`) {
 				t.Errorf("event Data does not carry the window text: %s vs %q", ev.Data, ev.Text)
 			}
@@ -385,6 +387,10 @@ func TestTransformedSSEStream_LookbehindJoinsPatternAcrossChunks(t *testing.T) {
 	}
 	if want := []int{0, 7, 8, 8}; !reflect.DeepEqual(overlaps, want) {
 		t.Errorf("overlaps = %v, want %v", overlaps, want)
+	}
+	// Only the flush before the finish event closes the window.
+	if want := []bool{false, false, false, true}; !reflect.DeepEqual(finals, want) {
+		t.Errorf("finals = %v, want %v", finals, want)
 	}
 	resp, err := AssembleChatResponse(decodeChatEvents(t, got))
 	if err != nil {
@@ -493,7 +499,9 @@ func TestTransformedSSEStream_LookbehindOrderingWithToolCallAndFinish(t *testing
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []EventKind{KindTextDelta, KindTextDelta, KindToolCallDelta, KindTextDelta, KindTextDelta, KindFinish}
+	// The tool call's arguments are a window of their own: seen once on
+	// arrival and once more when the next text delta flushes them.
+	want := []EventKind{KindTextDelta, KindTextDelta, KindToolCallDelta, KindToolCallDelta, KindTextDelta, KindTextDelta, KindFinish}
 	if strings.Join(kindStrings(kinds(tr.seen)), ",") != strings.Join(kindStrings(want), ",") {
 		t.Errorf("transformer saw %v, want %v", kinds(tr.seen), want)
 	}

@@ -96,7 +96,15 @@ type pass struct {
 	// model that repeats their placeholder cannot disclose them.
 	prompt    bool
 	restore   bool // put restorable placeholders back
+	json      bool // the text is raw JSON: streamed tool-call arguments
 	requestID string
+}
+
+// EditsContent reports whether this instance rewrites the text it analyzes.
+// An instance that only blocks, answers, or flags detections leaves the
+// request as it is - unless it restores placeholders, which edits again.
+func (p *Plugin) EditsContent() bool {
+	return p.action == ActionAnonymize || p.restore
 }
 
 // OnPrompt analyzes the text of the prompt messages of the configured
@@ -105,24 +113,32 @@ func (p *Plugin) OnPrompt(ctx context.Context, x *pluginapi.Exchange) (pluginapi
 	if x == nil || x.Prompt == nil {
 		return pluginapi.Allow(), nil
 	}
+	m := p.mapping(x)
 	var jobs []job
 	for _, t := range x.Prompt.TextTargets() {
 		if p.roles[t.Role] {
 			jobs = append(jobs, textJob(t, p.restorable(t.Role), x.Prompt.SetTargetText))
+		} else {
+			// Not analyzed, but the model reads it: its placeholder-shaped
+			// text must not collide with a new placeholder either.
+			m.reserve(t.Text)
 		}
 	}
-	if p.roles[pluginapi.RoleAssistant] {
-		for _, ref := range x.Prompt.ToolCalls() {
-			msgID, callID := ref.MessageID, ref.Call.ID
-			if j, ok := argsJob(unit{message: msgID}, ref.Call.Arguments, p.restorable(pluginapi.RoleAssistant), func(args json.RawMessage) error {
-				return x.Prompt.SetToolArguments(msgID, callID, args)
-			}); ok {
-				jobs = append(jobs, j)
-			}
+	for _, ref := range x.Prompt.ToolCalls() {
+		// Reserved whether or not the arguments are analyzed: analysis reads
+		// neither object keys nor scalar arguments.
+		reserveArgs(m, ref.Call.Arguments)
+		if !p.roles[pluginapi.RoleAssistant] {
+			continue
+		}
+		msgID, callID := ref.MessageID, ref.Call.ID
+		if j, ok := argsJob(unit{message: msgID}, ref.Call.Arguments, p.restorable(pluginapi.RoleAssistant), func(args json.RawMessage) error {
+			return x.Prompt.SetToolArguments(msgID, callID, args)
+		}); ok {
+			jobs = append(jobs, j)
 		}
 	}
 	rep := newReport()
-	m := p.mapping(x)
 	if err := p.run(ctx, jobs, m, rep, pass{prompt: true, requestID: x.Meta.RequestID}); err != nil {
 		return pluginapi.Decision{}, err
 	}
@@ -139,6 +155,7 @@ func (p *Plugin) OnResponse(ctx context.Context, x *pluginapi.Exchange) (plugina
 	if x == nil || x.Response == nil {
 		return pluginapi.Allow(), nil
 	}
+	m := p.mapping(x)
 	var jobs []job
 	for _, t := range x.Response.TextTargets() {
 		jobs = append(jobs, textJob(t, false, x.Response.SetTargetText))
@@ -149,6 +166,7 @@ func (p *Plugin) OnResponse(ctx context.Context, x *pluginapi.Exchange) (plugina
 				continue
 			}
 			callID := part.ToolCall.ID
+			reserveArgs(m, part.ToolCall.Arguments)
 			if j, ok := argsJob(unit{choice: i}, part.ToolCall.Arguments, false, func(args json.RawMessage) error {
 				return x.Response.SetToolArguments(i, callID, args)
 			}); ok {
@@ -157,7 +175,7 @@ func (p *Plugin) OnResponse(ctx context.Context, x *pluginapi.Exchange) (plugina
 		}
 	}
 	rep := newReport()
-	if err := p.run(ctx, jobs, p.mapping(x), rep, pass{restore: p.restore, requestID: x.Meta.RequestID}); err != nil {
+	if err := p.run(ctx, jobs, m, rep, pass{restore: p.restore, requestID: x.Meta.RequestID}); err != nil {
 		return pluginapi.Decision{}, err
 	}
 	return p.decide(rep), nil
@@ -200,15 +218,21 @@ func argsJob(u unit, args json.RawMessage, restorable bool, set func(json.RawMes
 
 // run analyzes every input (at most 8 analyzer calls in flight), then
 // rewrites them in document order and writes the results back when the
-// action edits or values are restored. Nothing is recorded or written, the
-// placeholder table included, until every analyzer call has succeeded: a
-// failed call fails the phase, so fail_mode decides.
+// action edits or values are restored. Placeholder-shaped text already in
+// any input is reserved before the first placeholder is allocated. Nothing is
+// recorded or written, and no placeholder allocated, until every analyzer
+// call has succeeded: a failed call fails the phase, so fail_mode decides.
 func (p *Plugin) run(ctx context.Context, jobs []job, m *mapping, rep *report, ps pass) error {
 	if len(jobs) == 0 {
 		return nil
 	}
 	if err := p.analyzeAll(ctx, jobs, ps.requestID); err != nil {
 		return err
+	}
+	for i := range jobs {
+		for _, text := range jobs[i].inputs {
+			m.reserve(text)
+		}
 	}
 	for i := range jobs {
 		j := &jobs[i]
@@ -302,7 +326,11 @@ func (p *Plugin) rewriteOne(text string, spans []span, u unit, restorable bool, 
 	}
 	if ps.restore {
 		var n int
-		out, n = m.restore(out)
+		if ps.json {
+			out, n = m.restoreJSON(out)
+		} else {
+			out, n = m.restore(out)
+		}
 		rep.add(0, n)
 	}
 	return out
