@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/enterpilot/gomodel/config"
+	"github.com/enterpilot/gomodel/internal/adminauth"
 	"github.com/enterpilot/gomodel/ext"
 	"github.com/enterpilot/gomodel/internal/auditlog"
 	"github.com/enterpilot/gomodel/internal/core"
@@ -158,6 +159,12 @@ func (b *bootstrap) initServerConfig() error {
 		MCPEnabled:                      appCfg.MCP.Enabled,
 		VersionChecker:                  app.versionCheck,
 	}
+	if appCfg.Admin.AuthEnabled {
+		auth, err := adminauth.New(b.ctx, app.storage, appCfg.Admin.SessionSecret, appCfg.Admin.BootstrapUsername, appCfg.Admin.BootstrapPassword)
+		if err != nil { return fmt.Errorf("initialize admin authentication: %w", err) }
+		app.adminAuth = auth
+		serverCfg.AdminAuth = auth
+	}
 	if app.mcpGateway != nil {
 		serverCfg.MCPGateway = app.mcpGateway.Service
 	}
@@ -172,6 +179,9 @@ func (b *bootstrap) initServerConfig() error {
 	}
 
 	applyExtensions(serverCfg, b.cfg.Extensions)
+	if app.adminAuth != nil {
+		serverCfg.RequestAuthenticators = append(serverCfg.RequestAuthenticators, app.adminAuth)
+	}
 	if app.telemetry != nil {
 		// Outermost, so the HTTP server span also covers extension middleware.
 		serverCfg.OuterMiddleware = append([]echo.MiddlewareFunc{app.telemetry.Middleware()}, serverCfg.OuterMiddleware...)

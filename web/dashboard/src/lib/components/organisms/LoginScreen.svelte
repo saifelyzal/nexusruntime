@@ -26,7 +26,7 @@
       class="login-form"
       onsubmit={(event) => {
         event.preventDefault();
-        auth.submit();
+        void auth.login();
       }}
     >
       {#if auth.externalLoginURL}
@@ -41,16 +41,23 @@
         </a>
         <div class="login-separator"><span>{m.auth_dialog_or_use_api_key()}</span></div>
       {/if}
-      <label class="login-label" for="loginApiKey">{m.auth_api_key_label()}</label>
+      <label class="login-label" for="loginUsername">Username</label>
+      <input
+        id="loginUsername"
+        class="login-plain-input"
+        type="text"
+        autocomplete="username"
+        bind:value={auth.username}
+      />
+      <label class="login-label" for="loginPassword">Password</label>
       <div class="login-input-shell">
         <Icon icon={LockKeyhole} class="login-input-icon" />
         <input
-          id="loginApiKey"
+          id="loginPassword"
           type="password"
-          placeholder={m.auth_api_key_placeholder()}
           autocomplete="current-password"
           data-modal-autofocus
-          bind:value={auth.apiKey}
+          bind:value={auth.password}
         />
       </div>
       {#if auth.authError}
@@ -217,6 +224,22 @@
     color: var(--text);
     font: inherit;
     outline: none;
+  }
+
+  .login-plain-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: color-mix(in srgb, var(--bg) 76%, transparent);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font: inherit;
+    outline: none;
+  }
+
+  .login-plain-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .login-input-shell input:focus {

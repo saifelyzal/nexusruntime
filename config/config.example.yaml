@@ -19,6 +19,15 @@ server:
   realtime_enabled: true # env: REALTIME_ENABLED; expose the /v1/realtime and /v1/realtime/translations websockets, their calls/client_secrets siblings, and /p/{provider}/v1/realtime upgrades
   pid_file: "data/gomodel.pid" # env: PID_FILE; where the running gateway records its process id so `gomodel --reload` can find it. Set per instance when several gateways share a host; empty writes no pid file and disables --reload; changing it needs a restart, not a reload
 
+# Database-backed browser login for the admin dashboard. Set the session
+# secret and bootstrap credentials through environment variables in production.
+# API keys remain available for programmatic gateway clients.
+admin:
+  auth_enabled: false # env: ADMIN_AUTH_ENABLED; set true to enable username/password login
+  session_secret: "" # env: ADMIN_SESSION_SECRET; at least 32 random characters
+  bootstrap_username: "" # env: ADMIN_BOOTSTRAP_USERNAME; used only when the first account is created
+  bootstrap_password: "" # env: ADMIN_BOOTSTRAP_PASSWORD; never commit a real password
+
 models:
   enabled_by_default: true # env: MODELS_ENABLED_BY_DEFAULT; when false, models stay unavailable until an access override allows one or more user paths
   keep_only_aliases_at_models_endpoint: false # env: KEEP_ONLY_ALIASES_AT_MODELS_ENDPOINT; hide provider models from GET /v1/models and expose only enabled virtual models

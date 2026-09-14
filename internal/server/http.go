@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/enterpilot/gomodel/internal/admin"
+	"github.com/enterpilot/gomodel/internal/adminauth"
 	"github.com/enterpilot/gomodel/internal/admin/dashboard"
 	"github.com/enterpilot/gomodel/internal/auditlog"
 	batchstore "github.com/enterpilot/gomodel/internal/batch"
@@ -107,6 +108,7 @@ type Config struct {
 	UserPathHeader                  string                                 // Header carrying the request user path (default: X-GoModel-User-Path)
 	AdminEndpointsEnabled           bool                                   // Whether admin API endpoints are enabled
 	AdminUIEnabled                  bool                                   // Whether admin dashboard UI is enabled
+	AdminAuth                       *adminauth.Service                     // Optional database-backed browser authentication
 	AdminHandler                    *admin.Handler                         // Admin API handler (nil if disabled)
 	DashboardHandler                *dashboard.Handler                     // Dashboard UI handler (nil if disabled)
 	SwaggerEnabled                  bool                                   // Whether to expose the Swagger UI at /swagger/index.html
@@ -270,6 +272,9 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	}
 	if cfg != nil {
 		authSkipPaths = append(authSkipPaths, cfg.ExtraAuthSkipPaths...)
+	}
+	if cfg != nil && cfg.AdminAuth != nil {
+		authSkipPaths = append(authSkipPaths, "/admin/auth/*")
 	}
 
 	// Global middleware stack (order matters)
@@ -503,6 +508,9 @@ func New(provider core.RoutableProvider, cfg *Config) *Server {
 	// Admin API routes (behind ADMIN_ENDPOINTS_ENABLED flag). Managed keys
 	// need dashboard access to pass the gate; the master key always does.
 	if cfg != nil && cfg.AdminEndpointsEnabled && cfg.AdminHandler != nil {
+		if cfg.AdminAuth != nil {
+			registerAdminAuth(e, cfg.AdminAuth)
+		}
 		adminGate := AdminAccessMiddleware()
 		// Admin responses are large, highly compressible JSON (audit entries
 		// carrying request/response bodies, usage aggregates), so gzip cuts

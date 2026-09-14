@@ -27,4 +27,11 @@ type AdminConfig struct {
 	// LiveLogsHeartbeatSeconds keeps idle stream connections and proxies active.
 	// Default: 15
 	LiveLogsHeartbeatSeconds int `yaml:"live_logs_heartbeat_seconds" env:"DASHBOARD_LIVE_LOGS_HEARTBEAT_SECONDS"`
+
+	// AuthEnabled protects the admin API with database-backed browser sessions.
+	// API-key authentication remains available for gateway clients.
+	AuthEnabled bool `yaml:"auth_enabled" env:"ADMIN_AUTH_ENABLED"`
+	SessionSecret string `yaml:"session_secret" env:"ADMIN_SESSION_SECRET"`
+	BootstrapUsername string `yaml:"bootstrap_username" env:"ADMIN_BOOTSTRAP_USERNAME"`
+	BootstrapPassword string `yaml:"bootstrap_password" env:"ADMIN_BOOTSTRAP_PASSWORD"`
 }

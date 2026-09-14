@@ -16,6 +16,7 @@ import (
 	"github.com/enterpilot/gomodel/config"
 	"github.com/enterpilot/gomodel/ext"
 	"github.com/enterpilot/gomodel/internal/auditlog"
+	"github.com/enterpilot/gomodel/internal/adminauth"
 	"github.com/enterpilot/gomodel/internal/authkeys"
 	"github.com/enterpilot/gomodel/internal/batch"
 	"github.com/enterpilot/gomodel/internal/budget"
@@ -62,6 +63,7 @@ type App struct {
 	providerCredentials *providers.CredentialsResult
 	pricingOverrides    *pricingoverrides.Result
 	authKeys            *authkeys.Result
+	adminAuth           *adminauth.Service
 	users               *users.Result
 	guardrails          *guardrails.Result
 	pluginCatalog       *plugins.Catalog

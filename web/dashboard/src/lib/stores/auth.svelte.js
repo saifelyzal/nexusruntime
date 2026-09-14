@@ -4,6 +4,7 @@
 // under an older key so they cannot clobber fresh data ("stale auth").
 
 import { authenticationResponseMetadata } from "./external-auth.js";
+import { gomodelPath } from "$lib/api/paths.js";
 
 const API_KEY_STORAGE_KEY = "gomodel_api_key";
 
@@ -18,6 +19,8 @@ export function normalizeApiKey(value) {
 
 class AuthStore {
   apiKey = $state("");
+  username = $state("");
+  password = $state("");
   needsAuth = $state(false);
   authError = $state(false);
   // Optional specific error text for the auth dialog; empty = generic copy.
@@ -96,6 +99,40 @@ class AuthStore {
     this.closeDialog();
     this.refresh();
     return true;
+  }
+
+  async login() {
+    this.authError = false;
+    this.authErrorMessage = "";
+    try {
+      const response = await fetch(gomodelPath("/admin/auth/login"), {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: this.username, password: this.password }),
+      });
+      if (!response.ok) {
+        this.authError = true;
+        this.authErrorMessage = "Invalid username or password.";
+        return false;
+      }
+      // An old API key would take precedence over the browser session.
+      this.apiKey = "";
+      try {
+        localStorage.removeItem(API_KEY_STORAGE_KEY);
+      } catch {
+        // Storage may be unavailable in restricted browser contexts.
+      }
+      this.password = "";
+      this.generation++;
+      this.needsAuth = false;
+      this.refresh();
+      return true;
+    } catch {
+      this.authError = true;
+      this.authErrorMessage = "Unable to reach the authentication service.";
+      return false;
+    }
   }
 
   refresh() {
