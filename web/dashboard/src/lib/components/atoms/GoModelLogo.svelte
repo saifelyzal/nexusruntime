@@ -4,4 +4,4 @@
   import { gomodelPath } from "$lib/api/paths.js";
 </script>
 
-<img src={gomodelPath("/logo.png")} alt="" aria-hidden="true" />
+<img src={gomodelPath("/admin/static/logo.png")} alt="" aria-hidden="true" />
