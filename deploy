@@ -1,9 +1,10 @@
-nexus deploy source --repo https://github.com/nexusrun/GoModel.git \
---name OpenRouter \
+nexus deploy source --repo https://github.com/saifelyzal/nexusruntime.git \
+--name gateway \
 --services postgresql,redis \
 --provider docker \
 --json \
 --framework go \
 --no-health-check no \
---env-file /Users/ihope/build/GoModel/.env.template \
---dockerfile "$(cat /Users/ihope/build/GoModel/Dockerfile.nexus)"
+--env-file /Users/ihope/build/nexusruntime/.env \
+--repo-secret gitrepo \
+--dockerfile "$(cat /Users/ihope/build/nexusruntime/Dockerfile.nexus)"
