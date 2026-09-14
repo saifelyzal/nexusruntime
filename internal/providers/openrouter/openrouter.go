@@ -16,7 +16,7 @@ import (
 
 const (
 	defaultBaseURL = "https://openrouter.ai/api/v1"
-	defaultSiteURL = "https://gomodel.enterpilot.io"
+	defaultSiteURL = "https://aigateway.nexusai.run"
 	defaultAppName = "GoModel"
 )
 

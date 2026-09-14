@@ -1,7 +1,7 @@
 # Default values for the GoModel Helm chart.
 #
 # GoModel is configured through environment variables. Every variable from
-# https://github.com/ENTERPILOT/GoModel/blob/main/.env.template can be set
+# https://github.com/saifelyzal/nexusruntime/blob/main/.env.template can be set
 # with `env` (plain values) or `secretEnv` (API keys and other secrets).
 
 # -- Number of gateway pods. SQLite storage (the default) is per pod, so more

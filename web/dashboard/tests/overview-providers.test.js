@@ -139,47 +139,47 @@ test("providerDocUrl links provider types with docs and stays empty otherwise", 
   // Types with a dedicated docs page.
   assert.equal(
     providerDocUrl({ type: "anthropic" }),
-    "https://gomodel.enterpilot.io/docs/providers/anthropic?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/anthropic?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ config: { type: "bedrock" } }),
-    "https://gomodel.enterpilot.io/docs/providers/bedrock?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/bedrock?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ type: "bedrock-mantle" }),
-    "https://gomodel.enterpilot.io/docs/providers/bedrock-mantle?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/bedrock-mantle?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ type: "cohere" }),
-    "https://gomodel.enterpilot.io/docs/providers/cohere?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/cohere?utm_source=gomodel_dashboard",
   );
   // Type slug differs from the docs slug.
   assert.equal(
     providerDocUrl({ type: "opencode_go" }),
-    "https://gomodel.enterpilot.io/docs/providers/opencode-go?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/opencode-go?utm_source=gomodel_dashboard",
   );
   // Resolves even when the (type) label is hidden because name === type.
   assert.equal(
     providerDocUrl({ name: "gemini", type: "GEMINI" }),
-    "https://gomodel.enterpilot.io/docs/providers/gemini?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/gemini?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ type: "llmd" }),
-    "https://gomodel.enterpilot.io/docs/providers/llmd?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/llmd?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ type: "sglang" }),
-    "https://gomodel.enterpilot.io/docs/providers/sglang?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/sglang?utm_source=gomodel_dashboard",
   );
   // Types registered but without a provider-specific doc page → fall back
   // to the providers overview so every card still surfaces a help link.
   assert.equal(
     providerDocUrl({ type: "openai" }),
-    "https://gomodel.enterpilot.io/docs/providers/overview?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/overview?utm_source=gomodel_dashboard",
   );
   assert.equal(
     providerDocUrl({ type: "ollama" }),
-    "https://gomodel.enterpilot.io/docs/providers/multiple-ollama?utm_source=gomodel_dashboard",
+    "https://aigateway.nexusai.run/docs/providers/multiple-ollama?utm_source=gomodel_dashboard",
   );
   // Provider with no type at all → no link.
   assert.equal(providerDocUrl({ name: "mystery" }), "");

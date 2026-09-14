@@ -46,7 +46,7 @@ const maxConcurrentBeacons = 8
 
 // DefaultURL is the public release manifest served by the GoModel website.
 // The channel file ("core.txt" or "pro.txt") is appended to it.
-const DefaultURL = "https://gomodel.enterpilot.io/version"
+const DefaultURL = "https://aigateway.nexusai.run/version"
 
 // Config configures a Checker. Zero values fall back to package defaults.
 type Config struct {

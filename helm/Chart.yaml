@@ -14,10 +14,10 @@ keywords:
   - anthropic
   - proxy
 
-home: https://gomodel.enterpilot.io
-icon: https://raw.githubusercontent.com/ENTERPILOT/GoModel/main/docs/logo.svg
+home: https://aigateway.nexusai.run
+icon: https://raw.githubusercontent.com/saifelyzal/nexusruntime/main/docs/logo.png
 sources:
-  - https://github.com/ENTERPILOT/GoModel
+  - https://github.com/saifelyzal/nexusruntime
 
 maintainers:
   - name: ENTERPILOT

@@ -743,7 +743,7 @@ providers:
 #   example:
 #     enabled: true
 
-# Version awareness. Checks https://gomodel.enterpilot.io/version once a day —
+# Version awareness. Checks https://aigateway.nexusai.run/version once a day —
 # and again on the first dashboard visit of each day — so operators learn that a
 # newer release exists. Sends the running version, the distribution name, a random
 # per-deployment install id, and the visiting browser's user agent and language.

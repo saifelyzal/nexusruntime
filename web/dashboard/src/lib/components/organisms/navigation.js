@@ -20,7 +20,6 @@ import {
   History,
   KeyRound,
   LayoutDashboard,
-  Plug,
   ServerCog,
   Settings,
   ShieldCheck,
@@ -72,12 +71,6 @@ export const NAV_ITEMS = [
     label: m.navigation_plugins_guardrails,
     icon: ShieldCheck,
     visible: () => globalOnly() && runtimeConfig.pluginsVisible(),
-  },
-  {
-    page: "mcp-servers",
-    label: m.navigation_mcp_servers,
-    icon: Plug,
-    visible: () => globalOnly() && runtimeConfig.mcpVisible(),
   },
   {
     page: "settings",

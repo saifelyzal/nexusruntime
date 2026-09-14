@@ -202,7 +202,7 @@ func TestStatic_ServesFavicon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewWithBasePath() returned error: %v", err)
 	}
-	rec := serveStatic(t, h, "/admin/static/favicon.svg")
+	rec := serveStatic(t, h, "/admin/static/favicon.png")
 	if rec.Code != http.StatusOK {
 		t.Errorf("expected 200 for favicon, got %d", rec.Code)
 	}

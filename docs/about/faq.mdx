@@ -16,12 +16,12 @@ backup commands for each storage backend, plus verification and rollback. Then:
     the binary in place:
 
     ```bash
-    curl -fsSL https://gomodel.enterpilot.io/install.sh | sh
+    curl -fsSL https://aigateway.nexusai.run/install.sh | sh
     ```
   </Tab>
   <Tab title="Windows">
     ```powershell
-    irm https://gomodel.enterpilot.io/install.ps1 | iex
+    irm https://aigateway.nexusai.run/install.ps1 | iex
     ```
   </Tab>
   <Tab title="Docker">
@@ -52,12 +52,12 @@ The version is also printed on the first line of the startup log.
 Yes — set `GOMODEL_VERSION` before running the installer:
 
 ```bash
-curl -fsSL https://gomodel.enterpilot.io/install.sh | GOMODEL_VERSION=vX.Y.Z sh
+curl -fsSL https://aigateway.nexusai.run/install.sh | GOMODEL_VERSION=vX.Y.Z sh
 ```
 
 On Windows set `$env:GOMODEL_VERSION` first. With Docker, use a version tag
 (`enterpilot/gomodel:X.Y.Z`) instead of `latest`. Replace `X.Y.Z` with a
-[published GoModel release](https://github.com/ENTERPILOT/GoModel/releases).
+[published GoModel release](https://github.com/saifelyzal/nexusruntime/releases).
 
 ## Is updating safe for my data?
 
@@ -125,4 +125,4 @@ trade available.
 feature you need as a developer and paying for Pro doesn't make sense for you,
 say so. A cheaper personal-use license — or open-sourcing that particular
 feature — is on the table. Ask on [Discord](https://discord.gg/gaEB9BQSPH) or
-[GitHub](https://github.com/ENTERPILOT/GoModel/issues).
+[GitHub](https://github.com/saifelyzal/nexusruntime/issues).

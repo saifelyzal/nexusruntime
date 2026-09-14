@@ -231,7 +231,7 @@ forwards everything else exactly as the provider sent it.
   client untouched — that passthrough is how you get at provider-native extras
   without waiting for a GoModel release. Read cache hits from the portable
   `usage.prompt_tokens_details.cached_tokens` if you want provider-independent
-  code. See [ADR-0011](https://github.com/ENTERPILOT/GoModel/blob/main/docs/adr/0011-field-forwarding-on-translated-paths.md).
+  code. See [ADR-0011](https://github.com/saifelyzal/nexusruntime/blob/main/docs/adr/0011-field-forwarding-on-translated-paths.md).
 - **Streams carry a final `usage` even if you did not ask for it.** With usage
   tracking on, GoModel adds `stream_options.include_usage` to every streaming
   request so it can price the call, and the provider's usage chunk is relayed

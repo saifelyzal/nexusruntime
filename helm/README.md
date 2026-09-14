@@ -1,6 +1,6 @@
 # GoModel Helm chart
 
-Deploys [GoModel](https://gomodel.enterpilot.io), an OpenAI-compatible AI gateway, on Kubernetes.
+Deploys [GoModel](https://aigateway.nexusai.run), an OpenAI-compatible AI gateway, on Kubernetes.
 
 ## Quick start
 

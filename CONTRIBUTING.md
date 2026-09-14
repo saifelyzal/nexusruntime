@@ -12,7 +12,7 @@ You do not need to fix every AI-generated comment. Sometimes these tools miss th
 
 You may also find helpful this short note about our technical philosophy:
 
-https://gomodel.enterpilot.io/docs/about/technical-philosophy
+https://aigateway.nexusai.run/docs/about/technical-philosophy
 
 ## Commit Messages
 
@@ -57,7 +57,7 @@ the gateway).
 
 For questions, ideas, or general discussion, please use GitHub Discussions:
 
-https://github.com/ENTERPILOT/GoModel/discussions
+https://github.com/saifelyzal/nexusruntime/discussions
 
 You can also reach out on Discord. If something is urgent, feel free to ping me: `SantiagoDePL`.
 
@@ -67,7 +67,7 @@ The project is currently licensed under the MIT License.
 
 If you want to understand our perspective on the future of the license, please read:
 
-https://gomodel.enterpilot.io/docs/about/license
+https://aigateway.nexusai.run/docs/about/license
 
 By submitting a contribution, you confirm that you have the right to submit it.
 

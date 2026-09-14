@@ -14,7 +14,14 @@
   import { gomodelPath } from "$lib/api/paths.js";
   import * as m from "$lib/paraglide/messages.js";
   import { NAV_ITEMS } from "./navigation.js";
-  import { LockKeyhole, LogOut, Route, UserRound } from "lucide";
+  import {
+    ChevronsLeft,
+    ChevronsRight,
+    LockKeyhole,
+    LogOut,
+    Route,
+    UserRound,
+  } from "lucide";
 
   // Visibility gates read the runtimeConfig store, so this re-filters when
   // the flags load.
@@ -88,7 +95,7 @@
     <div class="sidebar-logo">
       <GoModelLogo />
     </div>
-    <h1>GoModel</h1>
+    <h1>NEXUS AI Gateway</h1>
   </div>
   <nav class="sidebar-nav">
     {#each navItems as item (item.page)}
@@ -182,14 +189,21 @@
   onlostpointercapture={finishResize}
   onkeydown={resizeWithKeyboard}
   onclick={toggleSidebar}
-></div>
+>
+  <Icon
+    icon={sidebar.collapsed ? ChevronsRight : ChevronsLeft}
+    class="sidebar-toggle-icon"
+  />
+</div>
 
 <style>
 .sidebar {
     flex: 0 0 var(--sidebar-width);
     width: var(--sidebar-width);
-    background: var(--bg-surface);
-    border-right: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, var(--accent) 4%), var(--bg-surface));
+    border-right: 1px solid color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+    box-shadow: 12px 0 36px color-mix(in srgb, #000 18%, transparent);
     display: flex;
     flex-direction: column;
     position: sticky;
@@ -210,7 +224,8 @@
 
 .sidebar-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 12%, transparent);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -223,15 +238,17 @@
     color: var(--accent);
   }
 
-.sidebar-logo :global(svg) {
+.sidebar-logo :global(img) {
     width: 100%;
     height: 100%;
+    object-fit: contain;
   }
 
 .sidebar-header :global(h1) {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 700;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.2px;
+    line-height: 1.25;
   }
 
 .sidebar-nav {
@@ -263,6 +280,7 @@
 .nav-item.active {
     background: var(--accent);
     color: #fff;
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
   }
 
 /* Anchors the notification dot, which sits over the icon when the sidebar is
@@ -383,26 +401,38 @@
 
 /* Sidebar toggle handle */
 .sidebar-toggle {
-    flex: 0 0 6px;
+    flex: 0 0 16px;
     position: sticky;
     top: 0;
-    width: 6px;
+    width: 16px;
     height: 100vh;
     padding: 0;
-    background: transparent;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
     border: none;
+    color: var(--text-muted);
     cursor: ew-resize;
     z-index: 11;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
   }
 
 .sidebar-toggle:hover {
     background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
   }
 
 .sidebar-toggle:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--accent) 36%, transparent);
     outline-offset: 2px;
+  }
+
+.sidebar-toggle :global(.sidebar-toggle-icon) {
+    width: 14px;
+    height: 14px;
+    margin-top: 18px;
+    pointer-events: none;
   }
 
 :global(body.sidebar-resizing) {

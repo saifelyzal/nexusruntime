@@ -121,12 +121,12 @@ place:
 <Tabs>
   <Tab title="macOS / Linux">
     ```bash
-    curl -fsSL https://gomodel.enterpilot.io/install.sh | sh
+    curl -fsSL https://aigateway.nexusai.run/install.sh | sh
     ```
   </Tab>
   <Tab title="Windows">
     ```powershell
-    irm https://gomodel.enterpilot.io/install.ps1 | iex
+    irm https://aigateway.nexusai.run/install.ps1 | iex
     ```
   </Tab>
 </Tabs>
@@ -183,19 +183,19 @@ Updates default to the latest release. To stay on a known version, pin it:
   </Tab>
   <Tab title="macOS / Linux">
     ```bash
-    curl -fsSL https://gomodel.enterpilot.io/install.sh | GOMODEL_VERSION=vX.Y.Z sh
+    curl -fsSL https://aigateway.nexusai.run/install.sh | GOMODEL_VERSION=vX.Y.Z sh
     ```
   </Tab>
   <Tab title="Windows">
     ```powershell
     $env:GOMODEL_VERSION = "vX.Y.Z"
-    irm https://gomodel.enterpilot.io/install.ps1 | iex
+    irm https://aigateway.nexusai.run/install.ps1 | iex
     ```
   </Tab>
 </Tabs>
 
 Replace `X.Y.Z` with a
-[published release](https://github.com/ENTERPILOT/GoModel/releases).
+[published release](https://github.com/saifelyzal/nexusruntime/releases).
 
 ## Rolling back
 
@@ -224,4 +224,4 @@ docker run --rm -v gomodel_data:/data -v "$PWD":/backup alpine \
 | The version did not change | The old container is still running (`docker ps`), or a second `gomodel` binary earlier in `PATH` is being launched. |
 
 Still stuck? Ask on [Discord](https://discord.gg/gaEB9BQSPH) or open a
-[GitHub issue](https://github.com/ENTERPILOT/GoModel/issues).
+[GitHub issue](https://github.com/saifelyzal/nexusruntime/issues).

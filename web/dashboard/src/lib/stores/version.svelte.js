@@ -26,7 +26,7 @@ const REQUEST_TIMEOUT_MS = 10000;
 // this page's to link to — so the link is offered for open core alone, never
 // by ruling distributions out one at a time.
 const CORE_APP = "GoModel";
-const CORE_RELEASES_URL = "https://github.com/ENTERPILOT/GoModel/releases";
+const CORE_RELEASES_URL = "https://github.com/saifelyzal/nexusruntime/releases";
 
 class VersionStore {
   /** The gateway's own version, e.g. "0.1.81". */

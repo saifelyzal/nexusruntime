@@ -17,7 +17,7 @@ type VersionCheckConfig struct {
 
 	// URL is the base URL of the version manifest. The channel file
 	// ("core.txt" or "pro.txt") is appended to it.
-	// Default: https://gomodel.enterpilot.io/version
+	// Default: https://aigateway.nexusai.run/version
 	URL string `yaml:"url" env:"GOMODEL_VERSION_CHECK_URL"`
 
 	// IntervalHours is how often the background check runs. Each run is

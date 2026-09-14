@@ -4,7 +4,7 @@
   "title": "GoModel",
   "description": "Self-hosted gateway aggregating upstream MCP servers behind one authenticated HTTP endpoint.",
   "repository": {
-    "url": "https://github.com/ENTERPILOT/GoModel",
+    "url": "https://github.com/saifelyzal/nexusruntime",
     "source": "github"
   },
   "version": "0.1.52",

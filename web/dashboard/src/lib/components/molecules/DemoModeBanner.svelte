@@ -11,7 +11,7 @@
       <span>{m.demo_mode_warning()}</span>
     </div>
     <nav class="demo-mode-banner-links" aria-label={m.demo_mode_website_label()}>
-      <a href="https://gomodel.enterpilot.io/?utm_source=gomodel_dashboard" target="_blank" rel="noopener noreferrer">gomodel.enterpilot.io</a>
+      <a href="https://aigateway.nexusai.run/?utm_source=gomodel_dashboard" target="_blank" rel="noopener noreferrer">aigateway.nexusai.run</a>
     </nav>
   </aside>
 {/if}

@@ -16,7 +16,7 @@
 //   - Empty/whitespace input returns "" so callers can gate rendering.
 
 export const PROVIDER_DOCS_BASE_URL =
-  "https://gomodel.enterpilot.io/docs/providers/";
+  "https://aigateway.nexusai.run/docs/providers/";
 export const PROVIDER_DOCS_UTM = "utm_source=gomodel_dashboard";
 
 // Provider docs slugs derived from docs/providers/*.mdx.

@@ -3,7 +3,7 @@
 ## Reporting a Vulnerability
 
 Please report security issues privately through GitHub:
-[Report a vulnerability](https://github.com/ENTERPILOT/GoModel/security/advisories/new).
+[Report a vulnerability](https://github.com/saifelyzal/nexusruntime/security/advisories/new).
 This opens a private advisory only the maintainers can see, and lets us develop
 and review a fix in a private fork before anything is disclosed.
 

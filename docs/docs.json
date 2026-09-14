@@ -1,20 +1,20 @@
 {
     "$schema": "https://mintlify.com/docs.json",
     "theme": "maple",
-    "name": "GoModel",
-    "description": "GoModel is an open-source, OpenAI-compatible AI gateway that routes requests to any LLM provider, with failover, budgets, rate limits, caching, and usage tracking.",
+    "name": "NEXUS AI Gateway",
+    "description": "NEXUS AI Gateway is an open-source, OpenAI-compatible AI gateway that routes requests to any LLM provider, with failover, budgets, rate limits, caching, and usage tracking.",
     "logo": {
-        "light": "/wordmark-light.svg",
-        "dark": "/wordmark-dark.svg"
+        "light": "/wordmark-light.png",
+        "dark": "/wordmark-dark.png"
     },
     "favicon": {
-        "light": "/logo.svg",
-        "dark": "/logo.svg"
+        "light": "/logo.png",
+        "dark": "/logo.png"
     },
     "colors": {
-        "primary": "#2563eb",
-        "light": "#60a5fa",
-        "dark": "#1d4ed8"
+        "primary": "#0891b2",
+        "light": "#22e5ee",
+        "dark": "#065f73"
     },
     "icons": {
         "library": "lucide"
@@ -34,9 +34,9 @@
             "name": "enterpilot, Inc.",
             "legalName": "enterpilot, Inc.",
             "url": "https://enterpilot.io",
-            "logo": "https://gomodel.enterpilot.io/docs/logo.svg",
+            "logo": "https://aigateway.nexusai.run/docs/logo.png",
             "sameAs": [
-                "https://github.com/ENTERPILOT/GoModel"
+                "https://github.com/saifelyzal/nexusruntime"
             ]
         }
     },
@@ -62,7 +62,7 @@
         "links": [
             {
                 "type": "github",
-                "href": "https://github.com/ENTERPILOT/GoModel"
+                "href": "https://github.com/saifelyzal/nexusruntime"
             }
         ]
     },
