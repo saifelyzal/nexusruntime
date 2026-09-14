@@ -1,6 +1,7 @@
 <script>
   import Sidebar from "$lib/components/organisms/Sidebar.svelte";
   import AuthDialog from "$lib/components/organisms/AuthDialog.svelte";
+  import LoginScreen from "$lib/components/organisms/LoginScreen.svelte";
   import TypedConfirmationDialog from "$lib/components/organisms/TypedConfirmationDialog.svelte";
   import FlashMessages from "$lib/components/organisms/FlashMessages.svelte";
   import DemoModeBanner from "$lib/components/molecules/DemoModeBanner.svelte";
@@ -84,16 +85,20 @@
   const PageComponent = $derived(pageComponents[router.page] || OverviewPage);
 </script>
 
-<Sidebar />
-<main
-  id="dashboard-content"
-  class="content"
-  class:interactions-open={conversationDrawer.conversationOpen}
->
-  <DemoModeBanner />
-  <PageComponent />
-</main>
+{#if auth.needsAuth}
+  <LoginScreen />
+{:else}
+  <Sidebar />
+  <main
+    id="dashboard-content"
+    class="content"
+    class:interactions-open={conversationDrawer.conversationOpen}
+  >
+    <DemoModeBanner />
+    <PageComponent />
+  </main>
+{/if}
 <ConversationDrawer />
-<AuthDialog />
+{#if !auth.needsAuth}<AuthDialog />{/if}
 <TypedConfirmationDialog />
 <FlashMessages />
