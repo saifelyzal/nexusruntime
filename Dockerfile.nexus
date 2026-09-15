@@ -1,7 +1,7 @@
 FROM golang:1.27.1-alpine3.24
 RUN apk add --no-cache git ca-certificates nodejs npm
 ARG REPO_URL=https://github.com/saifelyzal/nexusruntime.git
-ARG REPO_REF=fc1cd2ed
+ARG REPO_REF=da0a4b7
 ARG VERSION=nexus
 WORKDIR /src
 RUN git clone "${REPO_URL}" . && git checkout "${REPO_REF}"
