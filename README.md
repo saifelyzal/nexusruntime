@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="NEXUS AI Gateway logo" src="docs/logo.png" width="96">
+  <img alt="NEXUS AI Gateway logo" src="docs/nexus-ai-logo.png" width="220">
 </p>
 
 <h1 align="center">
