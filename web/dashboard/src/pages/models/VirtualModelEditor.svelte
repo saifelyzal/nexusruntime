@@ -15,6 +15,7 @@
     vmFormShowBalancingOptions,
     vmFormStrategyPending,
     vmFormSupportsSlowdown,
+    vmFormScheduleStrategy,
   } from "./vmForm.js";
   import VmTargetRow from "./VmTargetRow.svelte";
   import { Plus, Save } from "lucide";
@@ -28,6 +29,19 @@
   // Row indices must match the flattened target list the move logic operates
   // on: an empty primary row is not in that list, so extras start at 0 then.
   const hasPrimary = $derived(vmFormHasPrimaryTarget(vm.vmForm));
+
+  function scheduleTargets(key) {
+    return Array.isArray(vm.vmForm.strategy_config?.[key])
+      ? vm.vmForm.strategy_config[key].join("\n")
+      : "";
+  }
+
+  function setScheduleTargets(key, value) {
+    vm.vmForm.strategy_config[key] = String(value || "")
+      .split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
 
   // The strategy dropdown is server-driven (VIRTUAL_MODEL_STRATEGIES); make
   // sure the runtime config is loaded by the time the editor shows it. The
@@ -168,6 +182,52 @@
         disabled={vm.vmFormManaged || vmFormStrategyPending(vm.vmForm)}
         onchange={(config) => vm.setVmStrategyConfig(config)}
       />
+    </div>
+  {/if}
+  {#if vmFormScheduleStrategy(vm.vmForm)}
+    <div class="vm-strategy-fields">
+      <p class="form-hint">Choose different model targets during local peak hours.</p>
+      <FormField id="virtual-model-timezone" label="Timezone">
+        <input
+          id="virtual-model-timezone"
+          type="text"
+          class="mono"
+          placeholder="America/Phoenix"
+          bind:value={vm.vmForm.strategy_config.timezone}
+          disabled={vm.vmFormManaged}
+        />
+        <span class="form-hint">Use an IANA timezone such as America/Phoenix or America/New_York.</span>
+      </FormField>
+      <div class="form-grid-2">
+        <FormField id="virtual-model-peak-start" label="Peak starts">
+          <input id="virtual-model-peak-start" type="time" bind:value={vm.vmForm.strategy_config.peak_start} disabled={vm.vmFormManaged} />
+        </FormField>
+        <FormField id="virtual-model-peak-end" label="Peak ends">
+          <input id="virtual-model-peak-end" type="time" bind:value={vm.vmForm.strategy_config.peak_end} disabled={vm.vmFormManaged} />
+        </FormField>
+      </div>
+      <FormField id="virtual-model-peak-targets" label="Peak-hour targets">
+        <textarea
+          id="virtual-model-peak-targets"
+          rows="3"
+          class="mono"
+          placeholder="openai/gpt-5\nfast-provider/model"
+          value={scheduleTargets("peak_targets")}
+          oninput={(event) => setScheduleTargets("peak_targets", event.currentTarget.value)}
+          disabled={vm.vmFormManaged}
+        ></textarea>
+      </FormField>
+      <FormField id="virtual-model-off-peak-targets" label="Off-peak targets">
+        <textarea
+          id="virtual-model-off-peak-targets"
+          rows="3"
+          class="mono"
+          placeholder="groq/llama\ncheaper-provider/model"
+          value={scheduleTargets("off_peak_targets")}
+          oninput={(event) => setScheduleTargets("off_peak_targets", event.currentTarget.value)}
+          disabled={vm.vmFormManaged}
+        ></textarea>
+      </FormField>
     </div>
   {/if}
   {#if vmFormShowBalancingOptions(vm.vmForm)}
@@ -315,6 +375,12 @@
 
   .vm-strategy-fields > :global(p) {
     margin: 0;
+  }
+
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .vm-routing-replaces {

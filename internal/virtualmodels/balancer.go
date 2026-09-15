@@ -86,6 +86,8 @@ func (s *Service) balancedResolution(ctx context.Context, snap *snapshot, entry 
 			return s.adaptiveTarget(entry, sessionID, pinned, pool)
 		case StrategyPlugin:
 			return s.pluginTarget(ctx, entry, sessionID, pinned, pool)
+		case StrategySchedule:
+			return s.scheduledTarget(entry, pool)
 		default:
 			return resolvedTarget{}, false
 		}
@@ -105,6 +107,11 @@ func (s *Service) balancedResolution(ctx context.Context, snap *snapshot, entry 
 			return pool[0]
 		case StrategyCost:
 			return s.cheapestTarget(snap, entry, pool)
+		case StrategySchedule:
+			if target, ok := s.scheduledTarget(entry, pool); ok {
+				return target
+			}
+			return pool[0]
 		default:
 			// Round robin, and adaptive or plugin whose selector had no
 			// usable answer.

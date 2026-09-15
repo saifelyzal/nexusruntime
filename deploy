@@ -1,5 +1,5 @@
 nexus deploy source --repo https://github.com/saifelyzal/nexusruntime.git \
---name gateway \
+--name aigateway \
 --services postgresql,redis \
 --provider docker \
 --json \

@@ -42,11 +42,18 @@ func normalizeRedirect(vm VirtualModel) (VirtualModel, []core.ModelSelector, err
 	}
 	if !validStrategy(vm.Strategy) {
 		return VirtualModel{}, nil, newValidationError(
-			fmt.Sprintf("unknown load-balancing strategy %q (use %q, %q, %q, %q, or %q)", vm.Strategy, StrategyRoundRobin, StrategyCost, StrategyFailover, StrategyAdaptive, StrategyPlugin), nil)
+			fmt.Sprintf("unknown load-balancing strategy %q (use %q, %q, %q, %q, %q, or %q)", vm.Strategy, StrategyRoundRobin, StrategyCost, StrategyFailover, StrategyAdaptive, StrategyPlugin, StrategySchedule), nil)
 	}
-	if vm.Strategy == StrategyPlugin {
+	if vm.Strategy == StrategyPlugin || vm.Strategy == StrategySchedule {
+		if vm.Strategy == StrategySchedule {
+			if err := validateScheduleConfig(vm.StrategyConfig); err != nil {
+				return VirtualModel{}, nil, err
+			}
+		}
 		if vm.StrategyPlugin == "" {
-			return VirtualModel{}, nil, newValidationError(fmt.Sprintf("strategy_plugin is required with strategy %q", StrategyPlugin), nil)
+			if vm.Strategy == StrategyPlugin {
+				return VirtualModel{}, nil, newValidationError(fmt.Sprintf("strategy_plugin is required with strategy %q", StrategyPlugin), nil)
+			}
 		}
 		if vm.StrategyConfig == nil {
 			vm.StrategyConfig = map[string]any{}

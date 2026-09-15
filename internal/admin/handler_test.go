@@ -2499,8 +2499,8 @@ func TestDashboardConfig_ReturnsAllowlistedRuntimeFlags(t *testing.T) {
 	if got := body.MCPEnabled; got != "off" {
 		t.Fatalf("MCP_ENABLED = %q, want off", got)
 	}
-	if got := body.VirtualModelStrategies; got != "round_robin,cost,adaptive" {
-		t.Fatalf("VIRTUAL_MODEL_STRATEGIES = %q, want round_robin,cost,adaptive", got)
+	if got := body.VirtualModelStrategies; got != "round_robin,cost,adaptive,schedule" {
+		t.Fatalf("VIRTUAL_MODEL_STRATEGIES = %q, want round_robin,cost,adaptive,schedule", got)
 	}
 	if got := body.UserPathHeader; got != "X-Tenant-Path" {
 		t.Fatalf("USER_PATH_HEADER = %q, want X-Tenant-Path", got)

@@ -104,6 +104,9 @@ const (
 	// When the plugin is missing, misconfigured, declines, panics, or times
 	// out, the redirect falls back to weighted round robin.
 	StrategyPlugin = "plugin"
+	// StrategySchedule selects targets from a timezone-aware peak/off-peak
+	// schedule configured in StrategyConfig.
+	StrategySchedule = "schedule"
 )
 
 // normalizeStrategy lower-cases and defaults a strategy string. An empty value
@@ -119,7 +122,7 @@ func normalizeStrategy(strategy string) string {
 // validStrategy reports whether strategy names a supported load-balancing mode.
 func validStrategy(strategy string) bool {
 	switch normalizeStrategy(strategy) {
-	case StrategyRoundRobin, StrategyCost, StrategyAdaptive, StrategyFailover, StrategyPlugin:
+	case StrategyRoundRobin, StrategyCost, StrategyAdaptive, StrategyFailover, StrategyPlugin, StrategySchedule:
 		return true
 	default:
 		return false

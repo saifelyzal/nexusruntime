@@ -165,7 +165,9 @@ class VirtualModelEditorStore {
     this.vmForm.strategy = parsed.strategy;
     this.vmForm.strategy_plugin = parsed.strategy_plugin;
     if (parsed.strategy !== "plugin") {
-      this.vmForm.strategy_config = {};
+      this.vmForm.strategy_config = parsed.strategy === "schedule"
+        ? { timezone: "UTC", peak_start: "09:00", peak_end: "17:00", peak_targets: [], off_peak_targets: [] }
+        : {};
       return;
     }
     if (parsed.strategy_plugin !== previousPlugin) {

@@ -69,7 +69,13 @@ export function defaultVirtualModelForm() {
     // A "plugin" strategy names its routing plugin and carries that plugin's
     // route-scoped settings (see GET /admin/plugins route_fields).
     strategy_plugin: "",
-    strategy_config: {},
+    strategy_config: {
+      timezone: "UTC",
+      peak_start: "09:00",
+      peak_end: "17:00",
+      peak_targets: [],
+      off_peak_targets: [],
+    },
     session_affinity: true,
     failover: true,
     user_paths: "",
@@ -82,6 +88,10 @@ export function defaultVirtualModelForm() {
 // vmFormPluginStrategy reports whether the form routes through a plugin.
 export function vmFormPluginStrategy(form) {
   return String((form && form.strategy) || "").toLowerCase() === "plugin";
+}
+
+export function vmFormScheduleStrategy(form) {
+  return String((form && form.strategy) || "").toLowerCase() === "schedule";
 }
 
 // pluginStrategyFields returns the strategy_plugin/strategy_config pair to
@@ -431,6 +441,8 @@ export function buildVirtualModelSavePayload(form, originalSource, mode) {
       payload.strategy = strategy;
       if (vmFormPluginStrategy(form)) {
         Object.assign(payload, pluginStrategyFields(form));
+      } else if (vmFormScheduleStrategy(form)) {
+        payload.strategy_config = cloneSchemaConfig(form.strategy_config);
       }
       // Affinity defaults to on server-side; only an explicit opt-out is sent.
       if (form && form.session_affinity === false) {
@@ -472,6 +484,8 @@ export function buildAliasTogglePayload(alias) {
     payload.strategy = alias.strategy || "round_robin";
     if (vmFormPluginStrategy(alias)) {
       Object.assign(payload, pluginStrategyFields(alias));
+    } else if (vmFormScheduleStrategy(alias)) {
+      payload.strategy_config = cloneSchemaConfig(alias.strategy_config);
     }
     if (alias.session_affinity === false) {
       payload.session_affinity = false;
