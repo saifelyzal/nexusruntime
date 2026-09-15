@@ -9,7 +9,6 @@
 <p align="center">
   <a href="https://github.com/saifelyzal/nexusruntime/actions/workflows/test.yml"><img alt="CI" src="https://github.com/saifelyzal/nexusruntime/actions/workflows/test.yml/badge.svg"></a>
   <a href="https://github.com/saifelyzal/nexusruntime/blob/main/go.mod"><img alt="GO Version" src="https://img.shields.io/github/go-mod/go-version/saifelyzal/nexusruntime?label=GO"></a>
-  <a href="https://hub.docker.com/r/enterpilot/gomodel"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/enterpilot/gomodel?label=Docker%20Pulls"></a>
   <a href="https://discord.gg/gaEB9BQSPH"><img alt="Discord" src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&logoColor=white"></a>
 </p>
 
@@ -45,47 +44,61 @@
 
 ## Quick Start
 
-**Step 1:** Install and start NEXUS AI Gateway
+**Step 1:** Prepare the NEXUS AI deployment
 
-**macOS / Linux**
-
-```bash
-curl -fsSL https://aigateway.nexusai.run/install.sh | sh
-# OPENAI_API_KEY="your-openai-key" # (optional)
-gomodel
-```
-
-**Windows (PowerShell)**
-
-```powershell
-irm https://aigateway.nexusai.run/install.ps1 | iex
-# $env:OPENAI_API_KEY = "your-openai-key" # (optional)
-gomodel
-```
-
-**Docker**
+Clone the repository, create a protected environment file, and authenticate the NEXUS AI CLI:
 
 ```bash
-docker run --rm -p 8080:8080 \
-  -e OPENAI_API_KEY="your-openai-key" \
-  enterpilot/gomodel
+git clone https://github.com/saifelyzal/nexusruntime.git
+cd nexusruntime
+cp .env.template .env
+nexus auth login
 ```
 
-ℹ️ Configure NEXUS AI Gateway with `.env`, a `config.yaml` file, or manage the most important settings directly in the dashboard.
+Configure provider keys, database settings, and dashboard credentials in NEXUS AI deployment environment variables or the protected `.env` file.
 
 ℹ️ See [`.env.template`](./.env.template) for the complete list of environment variables, including all available providers.
 
-**Step 2:** Open the dashboard
+**Step 2:** Deploy to NEXUS AI
 
-```text
-http://localhost:8080/admin/dashboard
-```
-
-**Step 3:** Make an API call
+Push the current source to the repository that NEXUS AI will build, then deploy it through the NEXUS AI CLI:
 
 ```bash
-curl http://localhost:8080/v1/responses \
+git push origin main
+
+nexus deploy source \
+  --repo https://github.com/saifelyzal/nexusruntime.git \
+  --name aigateway \
+  --branch main \
+  --provider docker \
+  --services postgresql,redis \
+  --dockerfile Dockerfile.nexus \
+  --env-file .env \
+  --environment PRODUCTION \
+  --wait \
+  --json
+```
+
+Keep provider keys, database credentials, and `ADMIN_SESSION_SECRET` in NEXUS AI environment settings or a protected `.env` file. Do not commit secrets. Verify the deployed source and environment after each build:
+
+```bash
+nexus deploy get aigateway --json
+nexus deploy status aigateway
+nexus deploy logs aigateway --lines 200
+```
+
+**Step 3:** Open the dashboard
+
+```text
+https://aigateway.nexusai.run/admin/dashboard
+```
+
+**Step 4:** Make an API call
+
+```bash
+curl https://aigateway.nexusai.run/v1/responses \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $NEXUS_AI_API_KEY" \
   -d '{
     "model": "gpt-5-chat-latest",
     "input": "Hello!"
@@ -101,8 +114,8 @@ NEXUS AI Gateway accepts requests in two compatible formats:
 
 The official SDKs therefore work unchanged. Configure their base URLs as follows:
 
-- OpenAI SDK: `http://localhost:8080/v1`
-- Anthropic SDK: `http://localhost:8080` (the SDK appends `/v1/messages`)
+- OpenAI SDK: `https://aigateway.nexusai.run/v1`
+- Anthropic SDK: `https://aigateway.nexusai.run` (the SDK appends `/v1/messages`)
 
 ## List of Supported LLM Providers
 
@@ -136,26 +149,6 @@ The official SDKs therefore work unchanged. Configure their base URLs as follows
 
 See the [Providers Overview](https://aigateway.nexusai.run/docs/providers/overview?utm_source=readme) for the full
 per-provider feature matrix.
-
----
-
-## Docker Compose
-
-**Infrastructure only** (Redis, PostgreSQL, MongoDB, Adminer - no image build):
-
-```bash
-cp .env.template .env
-# Add your API keys to .env
-docker compose up -d
-# or: make infra
-```
-
-**Full stack** (adds NEXUS AI Gateway + Prometheus; builds the app image):
-
-```bash
-docker compose --profile app up -d
-# or: make image
-```
 
 ---
 
