@@ -77,6 +77,7 @@ func scheduleTargetNames(value any, key string) ([]string, error) {
 			name, ok := item.(string)
 			if !ok { return nil, fmt.Errorf("schedule %s must contain model names", key) }
 			values = append(values, name)
+		}
 	default:
 		return nil, fmt.Errorf("schedule %s must be a list of model names", key)
 	}
